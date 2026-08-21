@@ -16,6 +16,8 @@ describe("buildReport", () => {
   it("includes both daily views, stable rejection codes, and final values", () => {
     const report = assessmentReport();
 
+    expect(report).toContain("---");
+    expect(report).toContain("ACCOUNT ACC-001");
     expect(report).toContain("AS-OBSERVED CLOSINGS");
     expect(report).toContain("FINAL-RESTATED CLOSINGS");
     expect(report).toContain("E6 [AUTHORIZATION_NOT_FOUND]");

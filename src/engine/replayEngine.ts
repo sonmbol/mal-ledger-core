@@ -158,6 +158,8 @@ function commitAccepted(
 
   const feeAudit: string[] = [];
 
+  // Fees only on DEBIT. A negative daily close alone does not charge — credits,
+  // settlements, and reversals never open a fee window even if the day stays negative.
   if (event.type === "DEBIT") {
     const fees = assessOverdraftFees(
       event,

@@ -27,3 +27,5 @@ Times are actual Asia/Dubai timestamps recorded during this implementation sessi
 - **2026-08-20T12:26:00+04:00** — Kept the architecture PDF local-only (upload separately). Rewrote publication history into five intact commits.
 
 Later verification commands and publication status are appended only when actually performed.
+
+- **2026-08-20T22:00:00+04:00** — Rewrote ARCHITECTURE.md / PDF (4 pages) for required trade-off sections; refreshed README and defense docs; local study cheat sheet kept gitignored.

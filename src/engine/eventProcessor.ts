@@ -3,7 +3,15 @@ import {
   type LedgerErrorCode as LedgerErrorCodeName,
   type LedgerRejection,
 } from "../domain/errors.js";
-import type { EventId, LedgerEvent } from "../domain/events.js";
+import type {
+  AuthorizationEvent,
+  CreditEvent,
+  DebitEvent,
+  EventId,
+  LedgerEvent,
+  ReversalEvent,
+  SettlementEvent,
+} from "../domain/events.js";
 import { Money } from "../domain/money.js";
 import type {
   AccountDefinition,
@@ -61,9 +69,7 @@ export function decideEvent(
   }
 }
 
-function decidePosting(
-  event: Extract<LedgerEvent, { type: "CREDIT" | "DEBIT" }>,
-): EventDecision {
+function decidePosting(event: CreditEvent | DebitEvent): EventDecision {
   const amount = parsePositiveAmount(event);
 
   if (amount instanceof Error) {
@@ -98,7 +104,7 @@ function decidePosting(
 }
 
 function decideAuthorization(
-  event: Extract<LedgerEvent, { type: "AUTHORIZATION" }>,
+  event: AuthorizationEvent,
   account: AccountDefinition,
   state: DecisionContext,
 ): EventDecision {
@@ -144,7 +150,7 @@ function decideAuthorization(
 }
 
 function decideSettlement(
-  event: Extract<LedgerEvent, { type: "SETTLEMENT" }>,
+  event: SettlementEvent,
   state: DecisionContext,
 ): EventDecision {
   const authorization = state.authorizations.get(event.authorizationId);
@@ -198,7 +204,7 @@ function decideSettlement(
 }
 
 function decideReversal(
-  event: Extract<LedgerEvent, { type: "REVERSAL" }>,
+  event: ReversalEvent,
   state: DecisionContext,
 ): EventDecision {
   const target = state.acceptedEvents.get(event.reversalTargetId);

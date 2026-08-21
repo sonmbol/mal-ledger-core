@@ -47,3 +47,15 @@ E10 posts one BHD 10.000 credit; three derived allocations conserve that total. 
 ## Duplicate rejected-event IDs
 
 Every received ID is consumed, accepted or rejected. Corrections need a new ID. Locked by the duplicate-ID test.
+
+## Ledger entry kind naming (clear core vs short codes)
+
+Unclear temptation for a “backend-looking” core: compress `LedgerEntryKind` to DR / CR / SETT / REV / OVER / INT (or similar). We keep the full discriminated strings:
+
+```ts
+"CREDIT" | "DEBIT" | "SETTLEMENT" | "REVERSAL" | "OVERDRAFT_FEE" | "INTEREST";
+```
+
+**Why the long form belongs in the engine.** This module is the money truth, not a wire codec. Entry kind is read in filters (`kind === "OVERDRAFT_FEE"`), reports, tests, live defense, and audit greps. Abbreviations save a few characters and cost clarity: OVER is ambiguous (overdraft vs overnight), SETT collides with “settled hold,” INT with “internal.” Mapping DR/CR at an API edge is fine; the append-only log should stay self-explanatory so a reader never needs a legend to know whether a row is a customer debit, a capture settlement, a derived fee, or capitalized interest.
+
+Event types stay equally explicit (`CREDIT`, `DEBIT`, `AUTHORIZATION`, …). Authorization is still not an entry kind — holds live in the auth registry, not the money log. Locked by `LedgerEntryKind` in `src/domain/types.ts` and fee/interest filters that match on these literals.

@@ -1,115 +1,53 @@
-# Architecture & Trade-offs
+# In-Memory Account Ledger Core — Architecture & Trade-offs
 
-Balances are a fold over an append-only log. Nothing is updated in place.
+Source narrative for the assessment architecture PDF (≤4 pages). Visual layout lives in local `ARCHITECTURE.html` → PDF; this file is the content spine.
+
+**Locked behavior:** daily-negative debit-window fees → ACC-001 **AED 390.93** · ACC-002 **BHD 10.008**. One-fee / 440.98 reading is **refused**.
+
+Balances are a **fold over an append-only log**. Nothing is updated in place.
 
 ```
 Events → Validate → Decide (pure) → Commit once → AccountView[] (derived)
 ```
 
-**Event** = stream input. **Outcome** = accepted or rejected. **LedgerEntry** = posted money. **AccountView** = per-account report after replay.
-
-Posted = opening + ledger entries. Available = posted − open holds. Fees and interest are extra entries.
+Rejected events leave **no** financial side effects. Commit is the **only** money writer.
 
 ---
 
-## 1. Code map — who owns what
+## 1. Overview (PDF p.1)
 
-| Role | File | Responsibility |
-| ---- | ---- | -------------- |
-| Entry | `src/index.ts` | `replay` → `buildReport` → stdout |
-| Fixture | `src/data/sampleEvents.ts` | ACC-001/002 + E1–E10 |
-| Conductor | `src/engine/replayEngine.ts` | Loop; own state; only commit writes |
-| Judge | `src/engine/eventProcessor.ts` | Pure `decideEvent` switch; no mutation |
-| Fee desk | `src/engine/feeAssessor.ts` | Debit → AED 25 on negative days |
-| Balances | `src/engine/balanceCalculator.ts` | Posted / available / day close |
-| Interest | `src/engine/interestCalculator.ts` | 0.04% on positive closes |
-| Split | `src/engine/installmentAllocator.ts` | Conserve installment totals |
-| Printer | `src/engine/reportBuilder.ts` | Format `ReplayResult` only |
+In-memory deterministic ledger core for Days 1–6 (ACC-001 AED, ACC-002 BHD). Priorities: correctness → auditability → deterministic replay → explicit ambiguity → live-defense readability.
 
-**How to follow one event:** `applyEvent` → `validateReceipt` → `decideEvent` → `commitAccepted` or `recordRejection`. Reject never writes entries or holds. After E1–E10: `buildAccountViews` → report.
+The swimlane shows one event: validate before mutate; reject = outcome only; accept = append money and/or update hold; debit may append fees in the same commit; reporter derives observed + restated views after the stream.
+
+| Locked final               | Value             |
+| -------------------------- | ----------------- |
+| ACC-001 posted / available | AED 390.93        |
+| ACC-002 posted             | BHD 10.008        |
+| E7 fees                    | Days 2, 4, 5 × 25 |
+| Rejected                   | E6, E8            |
 
 ---
 
-## 2. Append-only at scale
+## 2. Stream as proof harness (PDF p.2)
 
-**Grows without bound:** event log, auth index, reversal IDs, fee keys, daily-balance rescans.
+The E1–E10 matrix is **effects**, not Part 1 prose: holds without ledger rows (E3); atomic rejects (E6/E8); back-valued debit + multi-day fees (E7); append-only reversal that keeps fees (E9); BHD installment conservation (E10).
 
-**Breaks first:** rebuild six days from event zero on every request.
-
-**Cheapest fix:** checkpoint per account/day (last event, posted, open holds). Replay the tail. Log stays truth.
+**Two clocks:** receipt = when known; value date = where booked.
 
 ---
 
-## 3. One event — control flow
+## 3. Business trade-offs (PDF p.3)
 
-```mermaid
-flowchart TD
-  E[Next LedgerEvent] --> V{validateReceipt}
-  V -->|fail| R[recordRejection]
-  V -->|ok| D[decideEvent — pure]
-  D -->|rejected| R
-  D -->|accepted| C[commitAccepted]
-  C --> N[Next event]
-  R --> N
-```
-
-`decideEvent` returns a plan only. `commitAccepted` is the only money writer.
+- **Value dating:** late back-value restates books; keep observed vs restated; interest uses restated.
+- **Reversal:** E9 offsets E7 only; derived fees stay unless a separate compensating entry is required.
+- **Auth lifecycle:** this slice is OPEN → SETTLED; production endings (expiry/cancel/ops release) would append RELEASE — not implemented here.
+- **Fee ambiguity:** non-negotiable daily-negative rule wins over soft “one fee” wording → 390.93 not 440.98.
 
 ---
 
-## 4. MutableReplayState — memory bags
+## 4. Scale, UAE control, cuts (PDF p.4)
 
-```mermaid
-flowchart TB
-  subgraph state [MutableReplayState]
-    entries[entries — money log]
-    outcomes[outcomes — accept/reject per event]
-    auths[authorizations — holds]
-    accepted[acceptedEvents — for reversals]
-    reversed[reversedEventIds]
-    installments[installments — E10]
-    seen[receivedEventIds]
-    audit[audit — story lines]
-  end
-```
-
-`entries` is the money source of truth. Only `commitAccepted` / `recordRejection` mutate during the loop (interest may append at the end).
-
----
-
-## 5. Value-dated entries in production
-
-| Clock | Meaning |
-| ----- | ------- |
-| Event day | When learned (as-observed filters by `receivedDay`) |
-| Value date | Accounting day (restated uses `valueDate`) |
-
-Late back-value can restate a shipped day. **Control:** maker-checker + evidence → new compensating entry only. Cutoffs + recon. Engine has both views; not yet approval/calendars.
-
----
-
-## 6. Authorization lifecycle
-
-```
-          OPEN
-         /    \
-        v      v
-   SETTLED   RELEASED
- matching    expiry / void /
- settlement  cancel / ops
-```
-
-Bad settlement → reject, hold unchanged. Other endings = append-only release once.
-
----
-
-## 7. What was cut — risk deferred
-
-| Cut | Risk deferred |
-| --- | ------------- |
-| No disk / API / locks | Data loss, authn, double-spend |
-| No bank network / FX | Duplicates, recon, cross-currency |
-| Day 1–6 / no expiry | Holidays, TZ, stale holds |
-| No signing / fee auto-reverse | Tamper; fee left after debit |
-
-**Live sequence:** durable log + checkpoints → expiry/release + idempotent commands → maker-checker with signing and recon.
+- **100×:** full replay from zero breaks first → checkpoints + tail replay; log stays truth; derived read model for queries.
+- **UAE go-live:** shadow recon, sign-off, maker-checker + evidence for back-value (new compensating entry only), idempotency, append-only audit.
+- **Cuts:** no durable store/API/UI/FX/expiry scheduler/auto fee-clear — each defers a named risk so the core stays defendable in 45 minutes.

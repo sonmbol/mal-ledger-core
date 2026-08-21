@@ -2,6 +2,8 @@ import { Money } from "../domain/money.js";
 import type { LedgerDay } from "../domain/events.js";
 import type { AccountView, ReplayResult } from "../domain/types.js";
 
+const RULE = "---";
+
 /** Formats a completed replay without recalculating any financial result. */
 export function buildReport(result: ReplayResult): string {
   const { numerator, denominator } = result.policy.interest.rate;
@@ -21,8 +23,12 @@ export function buildReport(result: ReplayResult): string {
   return `${lines.join("\n")}\n`;
 }
 
+function section(lines: string[], title: string): void {
+  lines.push("", RULE, title);
+}
+
 function appendEventOutcomes(lines: string[], result: ReplayResult): void {
-  lines.push("", "EVENTS (supplied order)");
+  section(lines, "EVENTS (supplied order)");
 
   for (const outcome of result.outcomes) {
     const code =
@@ -35,7 +41,7 @@ function appendEventOutcomes(lines: string[], result: ReplayResult): void {
 }
 
 function appendDerivedFees(lines: string[], result: ReplayResult): void {
-  lines.push("", "DERIVED FEES");
+  section(lines, "DERIVED FEES");
 
   for (const fee of result.fees) {
     lines.push(
@@ -45,7 +51,7 @@ function appendDerivedFees(lines: string[], result: ReplayResult): void {
 }
 
 function appendAuthorizations(lines: string[], result: ReplayResult): void {
-  lines.push("", "AUTHORIZATIONS");
+  section(lines, "AUTHORIZATIONS");
 
   if (result.authorizations.length === 0) {
     lines.push("none");
@@ -75,13 +81,15 @@ function appendOneAccount(
   result: ReplayResult,
   account: AccountView,
 ): void {
-  const { accountId } = account;
+  section(lines, `ACCOUNT ${account.accountId}`);
 
-  lines.push("", `${accountId} AS-OBSERVED CLOSINGS`);
+  lines.push("AS-OBSERVED CLOSINGS");
   appendDailyBalances(lines, account.observed);
-  lines.push(`${accountId} FINAL-RESTATED CLOSINGS (before interest)`);
+
+  lines.push("", "FINAL-RESTATED CLOSINGS (before interest)");
   appendDailyBalances(lines, account.restatedBeforeInterest);
-  lines.push(`${accountId} DAILY INTEREST`);
+
+  lines.push("", "DAILY INTEREST");
 
   for (const day of result.policy.assessmentDays) {
     const allocation = account.interest.find((item) => item.day === day);
@@ -92,6 +100,7 @@ function appendOneAccount(
   }
 
   lines.push(
+    "",
     `Day ${result.policy.interest.capitalizationDay} capitalized interest: ${account.capitalizedInterest.currency} ${account.capitalizedInterest.format()}`,
     `Final posted: ${account.finalPosted.currency} ${account.finalPosted.format()}`,
     `Final available: ${account.finalAvailable.currency} ${account.finalAvailable.format()}`,
@@ -111,7 +120,7 @@ function appendDailyBalances(
 }
 
 function appendInstallments(lines: string[], result: ReplayResult): void {
-  lines.push("", "INSTALLMENTS");
+  section(lines, "INSTALLMENTS");
 
   for (const allocation of result.installments) {
     const formatted = allocation.amounts
@@ -123,7 +132,7 @@ function appendInstallments(lines: string[], result: ReplayResult): void {
 }
 
 function appendRejections(lines: string[], result: ReplayResult): void {
-  lines.push("", "ERRORS");
+  section(lines, "ERRORS");
 
   for (const outcome of result.outcomes) {
     if (outcome.status === "REJECTED") {

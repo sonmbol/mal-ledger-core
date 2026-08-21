@@ -20,3 +20,4 @@
 - Aggregate-first interest rounding — abandoned; daily allocations are authoritative and sum to capitalization.
 - Posting three installment ledger credits for E10 — abandoned; that would triple-post the credit.
 - Dual fee-assessment modes / configurable reversal-fee switches — abandoned mid-cleanup to keep one explainable policy.
+- Abbreviated ledger kinds (DR/CR/SETT/REV/OVER/INT) — abandoned. The core log must stay readable without a codebook; short codes belong at a transport boundary, not in `LedgerEntryKind`. See AMBIGUITIES.md.

@@ -3,4 +3,8 @@ coverage/
 dist/
 .DS_Store
 ARCHITECTURE.pdf
+ARCHITECTURE.html
+.pdf-tools/
 scripts/
+DEFENSE_CHEAT.html
+
