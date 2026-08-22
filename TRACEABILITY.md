@@ -14,5 +14,6 @@
 | acceptedEvents for reversal     | `acceptedEvents` map                               | reversal tests             | —                         |
 | Interest sum                    | `calculateInterest`                                | interest + replay          | NUMBERS                   |
 | Installments conserve           | `allocateInstallments`                             | allocator + refuse 3.334×3 | REJECTED                  |
+| Installments vs available cut   | `calculateAvailableBalance` ignores installments   | designLimit (it.fails)     | AMBIGUITIES, REJECTED     |
 | Deterministic report            | `buildReport`                                      | report suite               | README                    |
 | Scale / cuts / UAE control      | design only                                        | —                          | ARCHITECTURE.pdf          |

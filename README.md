@@ -17,6 +17,21 @@ npm run check   # format, lint, typecheck, tests
 
 Replay prints events in receipt order, derived fees, authorizations, as-observed and final-restated closings, interest, finals, installments, and rejections.
 
+### Reading the replay report
+
+Sections appear in this order, separated by `---`:
+
+1. **EVENTS** — each stream item in supplied order with ACCEPTED/REJECTED and message.
+2. **DERIVED FEES** — append-only overdraft rows (retained after reversal).
+3. **AUTHORIZATIONS** — hold registry (OPEN / SETTLED); holds reduce available, not posted.
+4. **Per-account blocks** — as-observed closings, final-restated closings, daily interest, capitalized interest, final posted/available.
+5. **INSTALLMENTS** — derived split of a posted credit (schedule only; does not move money again).
+6. **REJECTIONS** — structured error codes for atomic rejects (E6, E8).
+
+### Tests
+
+`npm test` runs **40 passing tests plus one annotated expected failure** in `tests/designLimit.test.ts` (`it.fails`). That test documents a deliberate design cut: installments conserve exact totals but do not gate available balance the way authorization holds do. Vitest reports it as `1 expected fail` while keeping the suite green.
+
 ## Theory (short)
 
 Balances are a **fold** over an **append-only** money log. Inputs are events; money moves only through ledger entries. Holds reduce **available**, not posted. Two clocks: **event day** (when learned) and **value date** (accounting day).

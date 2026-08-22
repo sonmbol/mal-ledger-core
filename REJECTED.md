@@ -19,5 +19,6 @@
 - Auto-reversing derived fees when E9 reverses E7 — abandoned; E9 names E7, not the fee. Fee compensation would be a separate entry if required.
 - Aggregate-first interest rounding — abandoned; daily allocations are authoritative and sum to capitalization.
 - Posting three installment ledger credits for E10 — abandoned; that would triple-post the credit.
+- Phasing available balance by installment slice (only first tranche spendable until settled) — abandoned; installments are a conservation schedule on one posted credit, not a hold lifecycle. See `tests/designLimit.test.ts`.
 - Dual fee-assessment modes / configurable reversal-fee switches — abandoned mid-cleanup to keep one explainable policy.
 - Abbreviated ledger kinds (DR/CR/SETT/REV/OVER/INT) — abandoned. The core log must stay readable without a codebook; short codes belong at a transport boundary, not in `LedgerEntryKind`. See AMBIGUITIES.md.

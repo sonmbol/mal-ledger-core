@@ -44,6 +44,10 @@ No expiry event exists; open holds would remain open. E8 creates no Auth-B becau
 
 E10 posts one BHD 10.000 credit; three derived allocations conserve that total. Locked by allocator and replay tests.
 
+## Installments versus available balance (phased release)
+
+Unclear in real products: should each installment slice become spendable only when it “settles,” like a hold release? That would mirror authorization semantics (reserve unreleased portions, release on settlement events). We chose the opposite: one full credit ledger entry posts immediately; `state.installments` is report-only metadata and never enters `calculateAvailableBalance`. Holds already reduce available without touching posted balance; a second installment-hold layer would need new event types and would change ACC-002 interest (full BHD 10.000 must be in the ledger from Day 5 for the locked 10.008 final). Locked by the annotated failing test in `tests/designLimit.test.ts`.
+
 ## Duplicate rejected-event IDs
 
 Every received ID is consumed, accepted or rejected. Corrections need a new ID. Locked by the duplicate-ID test.

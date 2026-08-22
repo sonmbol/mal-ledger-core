@@ -29,3 +29,4 @@ Times are actual Asia/Dubai timestamps recorded during this implementation sessi
 Later verification commands and publication status are appended only when actually performed.
 
 - **2026-08-20T22:00:00+04:00** — Rewrote ARCHITECTURE.md / PDF (4 pages) for required trade-off sections; refreshed README and defense docs; local study cheat sheet kept gitignored.
+- **2026-08-22T15:12:00+04:00** — Restored the assessment-required annotated failing design test (`tests/designLimit.test.ts`: installments do not phase available balance). Updated README report guide, AMBIGUITIES, REJECTED, and TRACEABILITY to match.
